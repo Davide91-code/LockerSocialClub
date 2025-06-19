@@ -1,3 +1,4 @@
+// ApiResponseDto.java
 package com.davideleonino.locker.dto.response;
 
 public class ApiResponseDto {
@@ -14,27 +15,11 @@ public class ApiResponseDto {
         this.data = data;
     }
 
-    public boolean isSuccess() {
-        return success;
-    }
+    public boolean isSuccess() { return success; }
+    public String getMessage() { return message; }
+    public Object getData() { return data; }
 
-    public String getMessage() {
-        return message;
-    }
-
-    public Object getData() {
-        return data;
-    }
-
-    public void setSuccess(boolean success) {
-        this.success = success;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public void setData(Object data) {
-        this.data = data;
-    }
+    public void setSuccess(boolean success) { this.success = success; }
+    public void setMessage(String message) { this.message = message; }
+    public void setData(Object data) { this.data = data; }
 }

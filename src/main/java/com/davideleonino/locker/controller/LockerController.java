@@ -1,172 +1,195 @@
 package com.davideleonino.locker.controller;
 
-import com.davideleonino.locker.dto.request.*;
+import com.davideleonino.locker.dto.request.ApriBoxRequest;
+import com.davideleonino.locker.dto.request.ChangeStatusRequest;
+import com.davideleonino.locker.dto.request.StartDepositoRequest;
+import com.davideleonino.locker.dto.request.PinRequest;
+import com.davideleonino.locker.dto.request.UpdateOperazioneStatusRequest;
+
 import com.davideleonino.locker.dto.response.ApiResponseDto;
 import com.davideleonino.locker.model.Box;
-import com.davideleonino.locker.service.LockerService;
-import jakarta.validation.Valid;
+import com.davideleonino.locker.model.BoxStatus;
+import com.davideleonino.locker.model.Operazione;
+import com.davideleonino.locker.service.BoxService;
+import com.davideleonino.locker.service.OperazioneService;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/locker")
+@RequestMapping("/api/locker")
 public class LockerController {
 
     @Autowired
-    private LockerService lockerService;
+    private BoxService boxService;
 
-    @PostMapping("/boxes")
-    public ResponseEntity<ApiResponseDto> creaBox(@RequestBody @Valid CreaBoxRequestDto dto) {
-        try {
-            Box box = lockerService.creaBox(dto.getNumBox());
-            return ResponseEntity.ok(new ApiResponseDto(true, "Box creato con successo", box));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new ApiResponseDto(false, e.getMessage(), null));
-        }
-    }
+    @Autowired
+    private OperazioneService operazioneService;
 
-    @PostMapping("/boxes/range")
-    public ResponseEntity<ApiResponseDto> creaBoxesRange(@RequestBody @Valid CreaBoxRangeRequestDto dto) {
-        try {
-            List<Box> boxes = lockerService.creaBoxesDaRange(dto.getStart(), dto.getEnd());
-            return ResponseEntity.ok(new ApiResponseDto(true, "Box creati con successo", boxes));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new ApiResponseDto(false, e.getMessage(), null));
-        }
-    }
+    // Tutte le GET confermate
 
 
-    //query totale endpoint
     @GetMapping("/boxes")
     public ResponseEntity<ApiResponseDto> getAllBoxes() {
-        List<Box> boxes = lockerService.getAllBoxes();
+        List<Box> boxes = boxService.getAllBoxes();
         return ResponseEntity.ok(new ApiResponseDto(true, "Lista di tutti i box", boxes));
     }
 
-    //query box liberi endpoint
-    @GetMapping("/boxes/liberi")
-    public ResponseEntity<ApiResponseDto> getBoxLiberi() {
-        List<Box> liberi = lockerService.getBoxLibero();
-        return ResponseEntity.ok(new ApiResponseDto(true, "Box liberi trovati", liberi));
+    @GetMapping("/boxes/available")
+    public ResponseEntity<ApiResponseDto> getAvailableBoxes() {
+        List<Box> boxes = boxService.getAvailableBoxes();
+        return ResponseEntity.ok(new ApiResponseDto(true, "Lista box disponibili", boxes));
     }
 
-    @GetMapping("/boxes/occupati")
-    public ResponseEntity<ApiResponseDto> getBoxOccupati() {
-        List<Box> occupati = lockerService.getBoxOccupati();
-        return ResponseEntity.ok(new ApiResponseDto(true, "Box occupati trovati", occupati));
-    }
-
-    //query box occupati ordine decres endpoint
-    @GetMapping("/boxes/occupati_ordinati")
-    public ResponseEntity<ApiResponseDto> getBoxOccupatiOrdinatiD() {
-        List<Box> ordinati = lockerService.getBoxOccupatiOrdinatiD();
-        return ResponseEntity.ok(new ApiResponseDto(true, "Box occupati ordinati in ordine decrescente", ordinati));
+    @GetMapping("/boxes/{id}")
+    public ResponseEntity<ApiResponseDto> getBoxById(@PathVariable Integer id) {
+        return boxService.getBoxById(id)
+                .map(box -> ResponseEntity.ok(new ApiResponseDto(true, "Box trovato", box)))
+                .orElse(ResponseEntity.status(404).body(new ApiResponseDto(false, "Box non trovato", null)));
     }
 
 
-
-
-    /*
-    @GetMapping("/boxes/{numBox}")
-    public ResponseEntity<Map<String, Object>> getBoxByNumBox(@PathVariable Integer numBox) {
-        try {
-            Box box = lockerService.getBoxByNumBox(numBox);  // ora ritorna direttamente Box, non Optionali
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Box trovato",
-                    "data", box
-            ));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(Map.of(
-                    "success", false,
-                    "message", e.getMessage()
-            ));
+    @GetMapping("/operations/{id}") //utile per verificare lo stato di operazione (spostatre in admin controller)
+    public ResponseEntity<ApiResponseDto> getOperazioneById(@PathVariable Integer id) {
+        Optional<Operazione> operazioneOpt = operazioneService.findById(id);
+        if (operazioneOpt.isPresent()) {
+            return ResponseEntity.ok(new ApiResponseDto(true, "Operazione trovata", operazioneOpt.get()));
+        } else {
+            return ResponseEntity.status(404).body(new ApiResponseDto(false, "Operazione non trovata", null));
         }
     }
 
-     */
+    // Unica PUT
 
-    @GetMapping("/boxes/{numBox}")
-    public ResponseEntity<ApiResponseDto> getBoxByNumBox(@PathVariable Integer numBox) {
-        try {
-            Box box = lockerService.getBoxByNumBox(numBox);
-            return ResponseEntity.ok(new ApiResponseDto(true, "Box trovato", box));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(new ApiResponseDto(false, e.getMessage(), null));
+    @PutMapping("/boxes/{id}/status")
+    public ResponseEntity<ApiResponseDto> changeBoxStatus(
+            @PathVariable Integer id,
+            @Valid @RequestBody ChangeStatusRequest request
+    ) {
+        return boxService.changeBoxStatus(id, request.getStatus())
+                .map(box -> ResponseEntity.ok(new ApiResponseDto(true, "Stato box aggiornato", box)))
+                .orElse(ResponseEntity.status(404).body(new ApiResponseDto(false, "Box non trovato", null)));
+    }
+
+    //  OPERAZIONI
+    // DEPOSITO IN 4 FASI
+
+    @PostMapping("/deposit/start")
+    public ResponseEntity<ApiResponseDto> startDeposito() {
+        Operazione operazione = operazioneService.creaOperazioneDepositoVuota();
+        return ResponseEntity.ok(new ApiResponseDto(true, "Operazione creata", operazione));
+    }
+
+    @PostMapping("/deposit/{id}/select-box")
+    public ResponseEntity<ApiResponseDto> selezionaBox(@PathVariable Integer id, @RequestBody Map<String, Integer> body) {
+        Integer boxId = body.get("boxId");
+        Operazione opAggiornata = operazioneService.assegnaBoxAOperazione(id, boxId);
+        return ResponseEntity.ok(new ApiResponseDto(true, "Box assegnato", opAggiornata));
+    }
+
+
+    @PostMapping("/deposit/{id}/set-pin")
+    public ResponseEntity<ApiResponseDto> setPin(@PathVariable Integer id, @RequestBody Map<String, String> body) {
+        String pin = body.get("pin");
+
+        Optional<Operazione> opOpt = operazioneService.findById(id);
+        if (opOpt.isEmpty()) {
+            return ResponseEntity.status(404).body(new ApiResponseDto(false, "Operazione non trovata", null));
         }
-    }
 
-    @GetMapping("/boxes/statistiche")
-    public ResponseEntity<ApiResponseDto> getStatisticheBox() {
-        Map<String, Object> stats = lockerService.getStatisticheBox();
-        return ResponseEntity.ok(new ApiResponseDto(true, "Statistiche relative ai box", stats));
-    }
-
-    @GetMapping("/boxes/occupati_piu_tempo")
-    public ResponseEntity<ApiResponseDto> getBoxOccupatiDaPiuTempo() {
-        List<Box> boxVecchi = lockerService.getBoxOccupatiDaPiuTempo();
-        return ResponseEntity.ok(new ApiResponseDto(true, "Box occupati da più tempo", boxVecchi));
-    }
-
-
-
-    @PostMapping("/deposita")
-    public ResponseEntity<ApiResponseDto> deposita(@RequestBody @Valid DepositoRequestDto dto) {
-        try {
-            String codiceAccesso = lockerService.deposita(dto.getNumBox());
-            return ResponseEntity.ok(new ApiResponseDto(true, "Deposito effettuato con successo", codiceAccesso));
-        } catch (RuntimeException err) {
-            return ResponseEntity.badRequest().body(new ApiResponseDto(false, "Errore nel deposito: " + err.getMessage(), null));
+        Operazione operazione = opOpt.get();
+        if (operazione.getPin() != null && !operazione.getPin().isEmpty()) {
+            return ResponseEntity.badRequest().body(new ApiResponseDto(false, "PIN già impostato", operazione));
         }
+
+        Operazione op = operazioneService.impostaPinOperazione(id, pin);
+        return ResponseEntity.ok(new ApiResponseDto(true, "PIN salvato", op));
     }
 
-
-    @PostMapping("/ritira")
-    public ResponseEntity<ApiResponseDto> ritira(@RequestBody @Valid RitiroRequestDto dto) {
+    @PostMapping("/deposit/{id}/open-box")
+    public ResponseEntity<ApiResponseDto> apriBox(
+            @PathVariable Integer id,
+            @Valid @RequestBody ApriBoxRequest request) {
         try {
-            lockerService.ritira(dto.getCodiceAccesso());
-            return ResponseEntity.ok(new ApiResponseDto(true, "Ritiro effettuato con successo", null));
-        } catch (RuntimeException err) {
-            return ResponseEntity.badRequest().body(new ApiResponseDto(false, "Errore nel ritiro: " + err.getLocalizedMessage(), null));
-        }
-    }
+            Operazione nuovaOp = operazioneService.apriBox(id, request.getPin(), request.getAperturaSuccesso());
 
-    @PutMapping("/boxes")
-    public ResponseEntity<ApiResponseDto> updateBox(@RequestBody @Valid UpdateBoxRequestDto dto) {
-        try {
-            Box updatedBox = lockerService.updateBox(dto.getNumBoxAttuale(), dto.getNuovoNumBox());
-            return ResponseEntity.ok(new ApiResponseDto(true, "Box aggiornato con successo", updatedBox));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new ApiResponseDto(false, "Errore: " + e.getMessage(), null));
-        }
-    }
+            String msg = request.getAperturaSuccesso()
+                    ? "Apertura box completata con successo"
+                    : "Apertura fallita: nuova operazione creata";
 
-    @DeleteMapping("/boxes/{numBox}")
-    public ResponseEntity<ApiResponseDto> deleteBox(@PathVariable Integer numBox) {
-        try {
-            lockerService.deleteBox(numBox);
-            return ResponseEntity.ok(new ApiResponseDto(true, "Box eliminato con successo", null));
-        } catch (RuntimeException e) {
+            return ResponseEntity.ok(new ApiResponseDto(true, msg, nuovaOp));
+        } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest()
                     .body(new ApiResponseDto(false, "Errore: " + e.getMessage(), null));
+        } catch (Exception e) {
+            e.printStackTrace();  // Log completo in console per debug
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponseDto(false, "Errore interno del server", null));
         }
     }
 
-    @DeleteMapping("/boxes/range")
-    public ResponseEntity<ApiResponseDto> deleteBoxesRange(@RequestBody @Valid DeleteBoxesRangeRequestDto dto) {
+
+    // RITIRO IN 3 FASI
+
+    @PostMapping("/withdraw/start")
+    public ResponseEntity<ApiResponseDto> startRitiro() {
+        Operazione operazione = operazioneService.creaOperazioneRitiroVuota();
+        return ResponseEntity.ok(new ApiResponseDto(true, "Operazione di ritiro creata", operazione));
+    }
+
+    @PostMapping("/withdraw/{id}/set-pin-and-box")
+    public ResponseEntity<ApiResponseDto> setPinAndBoxRitiro(
+            @PathVariable Integer id,
+            @RequestBody Map<String, Object> body) {
+
+        String pin = (String) body.get("pin");
+        Integer boxId;
         try {
-            lockerService.deleteBoxesDaRange(dto.getStart(), dto.getEnd());
-            return ResponseEntity.ok(new ApiResponseDto(true, "Box eliminati con successo", null));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponseDto(false, "Errore: " + e.getLocalizedMessage(), null));
+            boxId = (Integer) body.get("boxId");
+        } catch (ClassCastException e) {
+            return ResponseEntity.badRequest().body(new ApiResponseDto(false, "BoxId deve essere un intero", null));
+        }
+
+        try {
+            Operazione operazioneAggiornata = operazioneService.impostaPinEBoxRitiro(id, pin, boxId);
+            return ResponseEntity.ok(new ApiResponseDto(true, "PIN e box associati correttamente", operazioneAggiornata));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(new ApiResponseDto(false, e.getMessage(), null));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponseDto(false, "Errore interno del server", null));
         }
     }
 
+    @PostMapping("/withdraw/{id}/open-box")
+    public ResponseEntity<ApiResponseDto> apriBoxRitiro(
+            @PathVariable Integer id,
+            @Valid @RequestBody ApriBoxRequest request) {
+        try {
+            Operazione operazioneAggiornata = operazioneService.apriBoxRitiro(id, request.getPin(), request.getAperturaSuccesso());
+
+            String msg = request.getAperturaSuccesso()
+                    ? "Apertura box riuscita, ritiro completato"
+                    : "Apertura fallita, contattare assistenza";
+
+            return ResponseEntity.ok(new ApiResponseDto(true, msg, operazioneAggiornata));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponseDto(false, "Errore: " + e.getMessage(), null));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponseDto(false, "Errore interno del server", null));
+        }
+    }
 
 
 }

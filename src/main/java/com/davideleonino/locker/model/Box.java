@@ -1,10 +1,6 @@
 package com.davideleonino.locker.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.Objects;
 
 @Entity
@@ -15,17 +11,20 @@ public class Box {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private boolean isUsed;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private BoxStatus status;
 
     @Column(name = "num_box", unique = true, nullable = false)
     private Integer numBox;
 
-    public Box(Integer id, boolean isUsed, Integer numBox) {
+    public Box() {}
+
+    public Box(Integer id, BoxStatus status, Integer numBox) {
         this.id = id;
-        this.isUsed = isUsed;
+        this.status = status;
         this.numBox = numBox;
     }
-    public Box() {}
 
     public Integer getId() {
         return id;
@@ -35,12 +34,12 @@ public class Box {
         this.id = id;
     }
 
-    public boolean isUsed() {
-        return isUsed;
+    public BoxStatus getStatus() {
+        return status;
     }
 
-    public void setUsed(boolean used) {
-        isUsed = used;
+    public void setStatus(BoxStatus status) {
+        this.status = status;
     }
 
     public Integer getNumBox() {
@@ -53,7 +52,9 @@ public class Box {
 
     @Override
     public boolean equals(Object o) {
+        if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+
         Box box = (Box) o;
         return Objects.equals(id, box.id);
     }
