@@ -55,17 +55,6 @@ public class LockerController {
                 .orElse(ResponseEntity.status(404).body(new ApiResponseDto(false, "Box non trovato", null)));
     }
 
-
-    @GetMapping("/operations/{id}") //utile per verificare lo stato di operazione (spostatre in admin controller)
-    public ResponseEntity<ApiResponseDto> getOperazioneById(@PathVariable Integer id) {
-        Optional<Operazione> operazioneOpt = operazioneService.findById(id);
-        if (operazioneOpt.isPresent()) {
-            return ResponseEntity.ok(new ApiResponseDto(true, "Operazione trovata", operazioneOpt.get()));
-        } else {
-            return ResponseEntity.status(404).body(new ApiResponseDto(false, "Operazione non trovata", null));
-        }
-    }
-
     // Unica PUT
 
     @PutMapping("/boxes/{id}/status")

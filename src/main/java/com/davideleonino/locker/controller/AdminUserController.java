@@ -6,14 +6,18 @@ import com.davideleonino.locker.dto.request.AssegnaPinRequest;
 import com.davideleonino.locker.dto.response.ApiResponseDto;
 import com.davideleonino.locker.model.AdminUser;
 import com.davideleonino.locker.model.Operazione;
+import com.davideleonino.locker.security.JwtUtil;
 import com.davideleonino.locker.service.AdminUserService;
 import com.davideleonino.locker.service.BoxService;
 
+import com.davideleonino.locker.service.OperazioneService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -26,11 +30,23 @@ public class AdminUserController {
     @Autowired
     private BoxService boxService;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private OperazioneService operazioneService;
+
     @PostMapping("/login")
     public ResponseEntity<ApiResponseDto> login(@Valid @RequestBody LoginRequest request) {
         Optional<AdminUser> admin = adminUserService.login(request.getUsername(), request.getPassword());
-        return admin.map(a -> ResponseEntity.ok(new ApiResponseDto(true, "Login effettuato con successo.", a)))
-                .orElse(ResponseEntity.status(401).body(new ApiResponseDto(false, "Credenziali non valide.", null)));
+        if (admin.isPresent()) {
+            String token = jwtUtil.generateToken(request.getUsername());
+            // puoi includere il token nella response
+            return ResponseEntity.ok(new ApiResponseDto(true, "Login effettuato con successo.",
+                    Map.of("admin", admin.get(), "token", token)));
+        } else {
+            return ResponseEntity.status(401).body(new ApiResponseDto(false, "Credenziali non valide.", null));
+        }
     }
 
     @PostMapping("/libera-box/{boxId}")
@@ -68,6 +84,16 @@ public class AdminUserController {
         return adminUserService.trovaPerUsername(username)
                 .map(admin -> ResponseEntity.ok(new ApiResponseDto(true, "Admin trovato", admin)))
                 .orElse(ResponseEntity.status(404).body(new ApiResponseDto(false, "Admin non trovato", null)));
+    }
+
+    @GetMapping("/operations/{id}") //utile per verificare lo stato di operazione (spostatre in admin controller)
+    public ResponseEntity<ApiResponseDto> getOperazioneById(@PathVariable Integer id) {
+        Optional<Operazione> operazioneOpt = operazioneService.findById(id);
+        if (operazioneOpt.isPresent()) {
+            return ResponseEntity.ok(new ApiResponseDto(true, "Operazione trovata", operazioneOpt.get()));
+        } else {
+            return ResponseEntity.status(404).body(new ApiResponseDto(false, "Operazione non trovata", null));
+        }
     }
 
     @PutMapping("/boxes/{id}/status")

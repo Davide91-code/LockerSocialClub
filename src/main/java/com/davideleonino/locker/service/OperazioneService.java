@@ -66,6 +66,10 @@ public class OperazioneService {
     public Operazione assegnaBoxAOperazione(Integer operazioneId, Integer boxId) {
         Operazione op = operazioneRepository.findById(operazioneId)
                 .orElseThrow(() -> new IllegalArgumentException("Operazione non trovata"));
+
+        if (op.getStato() != StatoOperazione.IN_PROGRESS) {
+            throw new IllegalStateException("Operazione già conclusa");
+        }
         if (op.getBoxAssociato() != null) throw new IllegalStateException("Box già assegnato");
 
         Box box = boxService.getBoxById(boxId)
@@ -85,55 +89,39 @@ public class OperazioneService {
         Operazione op = operazioneRepository.findById(operazioneId)
                 .orElseThrow(() -> new IllegalArgumentException("Operazione non trovata"));
 
+        if (op.getStato() != StatoOperazione.IN_PROGRESS) {
+            throw new IllegalStateException("Operazione già conclusa");
+        }
         if (op.getPin() != null) throw new IllegalStateException("PIN già impostato");
         op.setPin(pin);
         return operazioneRepository.save(op);
     }
 
 
-    /*
     public Operazione apriBox(Integer operazioneId, String pin, boolean aperturaSuccesso) {
         Operazione op = operazioneRepository.findById(operazioneId)
                 .orElseThrow(() -> new IllegalArgumentException("Operazione non trovata"));
 
+        if (op.getStato() != StatoOperazione.IN_PROGRESS) {
+            throw new IllegalStateException("Operazione già conclusa");
+        }
+
         if (pin == null || !pin.equals(op.getPin())) {
             throw new IllegalArgumentException("PIN errato");
         }
+        if (!pin.equals(op.getPin())) {
+            op.setTentativiPin(op.getTentativiPin() + 1);
 
-        Box box = op.getBoxAssociato();
-        if (box == null) throw new IllegalStateException("Nessun box assegnato");
+            if (op.getTentativiPin() >= 3) {
+                op.setStato(StatoOperazione.FAILED);
+                operazioneRepository.save(op);
+                throw new IllegalStateException("Troppi tentativi falliti. Operazione bloccata.");
+            }
 
-        if (aperturaSuccesso) {
-            //  Caso successo: chiudo operazione
-            boxService.changeBoxStatus(box.getId(), BoxStatus.OCCUPIED);
-            op.setStato(StatoOperazione.SUCCESS);
-            return operazioneRepository.save(op);
-        } else {
-            //  Caso fallimento
-            boxService.changeBoxStatus(box.getId(), BoxStatus.DISABLED_TEMP);
-            op.setStato(StatoOperazione.FAILED);
             operazioneRepository.save(op);
-
-            //  Crea nuova operazione IN_PROGRESS con lo stesso PIN
-            Operazione nuova = new Operazione();
-            nuova.setTipoOperazione(TipoOperazione.DEPOSIT);
-            nuova.setStato(StatoOperazione.IN_PROGRESS);
-            nuova.setPin(pin);
-            nuova.setDataOrario(LocalDateTime.now());
-            return operazioneRepository.save(nuova); // restituiamo la nuova
-        }
-    }
-
-
-     */
-
-    public Operazione apriBox(Integer operazioneId, String pin, boolean aperturaSuccesso) {
-        Operazione op = operazioneRepository.findById(operazioneId)
-                .orElseThrow(() -> new IllegalArgumentException("Operazione non trovata"));
-
-        if (pin == null || !pin.equals(op.getPin())) {
             throw new IllegalArgumentException("PIN errato");
         }
+
 
         Box box = op.getBoxAssociato();
         if (box == null) throw new IllegalStateException("Nessun box assegnato");
@@ -200,6 +188,10 @@ public class OperazioneService {
     public Operazione apriBoxRitiro(Integer operazioneId, String pin, boolean aperturaSuccesso) {
         Operazione operazione = operazioneRepository.findById(operazioneId)
                 .orElseThrow(() -> new IllegalArgumentException("Operazione non trovata"));
+
+        if (operazione.getStato() != StatoOperazione.IN_PROGRESS) {
+            throw new IllegalStateException("Operazione già conclusa");
+        }
 
         if (!operazione.getPin().equals(pin)) {
             throw new IllegalArgumentException("PIN errato");

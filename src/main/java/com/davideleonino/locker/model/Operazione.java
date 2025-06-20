@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "statusbox")
+@Table(name = "operazioni")
 public class Operazione {
 
     @Id
@@ -16,6 +16,10 @@ public class Operazione {
     @Column(nullable = true) // avendo reso il pin nullable, il rischio di debolezza aumenta in caso di distrazione:
     // ricordare di usare valida.pin in ogni metodo successivo. Inoltre ho modificato il valore nel DB MYSQL da shell, in maniera tale che accetti null all'inizio.
     private String pin; // ex codiceAccesso
+
+    @Column(nullable = false)
+    private int tentativiPin = 0;
+
 
     @ManyToOne
     @JoinColumn(name = "box_id")
@@ -34,13 +38,22 @@ public class Operazione {
 
     public Operazione() {}
 
-    public Operazione(Integer id, String pin, Box boxAssociato, TipoOperazione tipoOperazione, StatoOperazione stato, LocalDateTime dataOrario) {
+    public Operazione(Integer id, String pin, int tentativiPin, Box boxAssociato, TipoOperazione tipoOperazione, StatoOperazione stato, LocalDateTime dataOrario) {
         this.id = id;
         this.pin = pin;
+        this.tentativiPin = tentativiPin;
         this.boxAssociato = boxAssociato;
         this.tipoOperazione = tipoOperazione;
         this.stato = stato;
         this.dataOrario = dataOrario;
+    }
+
+    public int getTentativiPin() {
+        return tentativiPin;
+    }
+
+    public void setTentativiPin(int tentativiPin) {
+        this.tentativiPin = tentativiPin;
     }
 
     public Integer getId() {
