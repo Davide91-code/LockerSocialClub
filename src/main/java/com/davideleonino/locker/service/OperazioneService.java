@@ -148,7 +148,7 @@ public class OperazioneService {
     }
 
 
-    // LOGICA RITIRO IN 2 FASI
+    // LOGICA RITIRO IN 3 FASI
 
     public Operazione creaOperazioneRitiroVuota() {
         Operazione operazione = new Operazione();
@@ -185,7 +185,7 @@ public class OperazioneService {
         return operazioneRepository.save(operazione);
     }
 
-    public Operazione apriBoxRitiro(Integer operazioneId, String pin, boolean aperturaSuccesso) {
+    /*public Operazione apriBoxRitiro(Integer operazioneId, String pin, boolean aperturaSuccesso) {
         Operazione operazione = operazioneRepository.findById(operazioneId)
                 .orElseThrow(() -> new IllegalArgumentException("Operazione non trovata"));
 
@@ -218,6 +218,36 @@ public class OperazioneService {
         boxRepository.save(box);
         return operazioneRepository.save(operazione);
     }
+
+     */
+
+    public Operazione apriBoxRitiro(Integer operazioneId, String pin, boolean aperturaSuccesso) {
+        Operazione operazione = operazioneRepository.findById(operazioneId)
+                .orElseThrow(() -> new IllegalArgumentException("Operazione non trovata"));
+
+        if (operazione.getStato() != StatoOperazione.IN_PROGRESS) {
+            throw new IllegalStateException("Operazione già conclusa");
+        }
+        if (!operazione.getPin().equals(pin)) {
+            throw new IllegalArgumentException("PIN errato");
+        }
+
+        Box box = operazione.getBoxAssociato();
+        if (box == null || box.getStatus() != BoxStatus.OCCUPIED) {
+            throw new IllegalStateException("Box non è occupato");
+        }
+
+        if (aperturaSuccesso) {
+            box.setStatus(BoxStatus.FREE);
+            operazione.setStato(StatoOperazione.SUCCESS);
+        } else {
+            operazione.setStato(StatoOperazione.FAILED);
+        }
+
+        boxRepository.save(box);
+        return operazioneRepository.save(operazione);
+    }
+
 
 
 }

@@ -133,17 +133,20 @@ public class LockerController {
         return ResponseEntity.ok(new ApiResponseDto(true, "Operazione di ritiro creata", operazione));
     }
 
+
     @PostMapping("/withdraw/{id}/set-pin-and-box")
     public ResponseEntity<ApiResponseDto> setPinAndBoxRitiro(
             @PathVariable Integer id,
             @RequestBody Map<String, Object> body) {
 
         String pin = (String) body.get("pin");
+        Object boxIdObj = body.get("boxId");
         Integer boxId;
-        try {
-            boxId = (Integer) body.get("boxId");
-        } catch (ClassCastException e) {
-            return ResponseEntity.badRequest().body(new ApiResponseDto(false, "BoxId deve essere un intero", null));
+
+        if (boxIdObj instanceof Number) {
+            boxId = ((Number) boxIdObj).intValue();
+        } else {
+            return ResponseEntity.badRequest().body(new ApiResponseDto(false, "BoxId deve essere un numero intero", null));
         }
 
         try {
@@ -157,6 +160,7 @@ public class LockerController {
                     .body(new ApiResponseDto(false, "Errore interno del server", null));
         }
     }
+
 
     @PostMapping("/withdraw/{id}/open-box")
     public ResponseEntity<ApiResponseDto> apriBoxRitiro(
