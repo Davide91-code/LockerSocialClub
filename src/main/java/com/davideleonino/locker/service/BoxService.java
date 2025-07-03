@@ -105,21 +105,4 @@ public class BoxService {
         return Optional.of(operazione);
     }
 
-    public Optional<Box> assegnaBoxLibero() {
-        List<Box> freeBoxes = boxRepository.findByStatus(BoxStatus.FREE);
-        if (freeBoxes.isEmpty()) {
-            return Optional.empty();
-        }
-        Box box = freeBoxes.get(0);
-        box.setStatus(BoxStatus.OCCUPIED);
-        boxRepository.save(box);
-        return Optional.of(box);
-    }
-
-    public Optional<Box> setBoxStatus(Integer boxId, BoxStatus newStatus) {
-        return boxRepository.findById(boxId).map(box -> {
-            box.setStatus(newStatus);
-            return boxRepository.save(box);
-        });
-    }
 }

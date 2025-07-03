@@ -36,11 +36,6 @@ public class LockerController {
     // Tutte le GET confermate
 
 
-    @GetMapping("/boxes")
-    public ResponseEntity<ApiResponseDto> getAllBoxes() {
-        List<Box> boxes = boxService.getAllBoxes();
-        return ResponseEntity.ok(new ApiResponseDto(true, "Lista di tutti i box", boxes));
-    }
 
     @GetMapping("/boxes/available")
     public ResponseEntity<ApiResponseDto> getAvailableBoxes() {
@@ -79,6 +74,10 @@ public class LockerController {
     @PostMapping("/deposit/{id}/select-box")
     public ResponseEntity<ApiResponseDto> selezionaBox(@PathVariable Integer id, @RequestBody Map<String, Integer> body) {
         Integer boxId = body.get("boxId");
+        if (boxId == null) {
+            return ResponseEntity.badRequest().body(new ApiResponseDto(false, "boxId mancante", null));
+        }
+
         Operazione opAggiornata = operazioneService.assegnaBoxAOperazione(id, boxId);
         return ResponseEntity.ok(new ApiResponseDto(true, "Box assegnato", opAggiornata));
     }
@@ -134,14 +133,20 @@ public class LockerController {
     }
 
 
-    @PostMapping("/withdraw/{id}/set-pin-and-box")
-    public ResponseEntity<ApiResponseDto> setPinAndBoxRitiro(
+
+
+    @PostMapping("/withdraw/{id}/verify-pin-and-box")
+    public ResponseEntity<ApiResponseDto> verificaPinEBox(
             @PathVariable Integer id,
             @RequestBody Map<String, Object> body) {
+
+
 
         String pin = (String) body.get("pin");
         Object boxIdObj = body.get("boxId");
         Integer boxId;
+
+        System.out.println("DEBUG verificaPinEBox: id=" + id + ", pin=" + pin + ", boxId=" + boxIdObj);
 
         if (boxIdObj instanceof Number) {
             boxId = ((Number) boxIdObj).intValue();
@@ -150,15 +155,19 @@ public class LockerController {
         }
 
         try {
-            Operazione operazioneAggiornata = operazioneService.impostaPinEBoxRitiro(id, pin, boxId);
-            return ResponseEntity.ok(new ApiResponseDto(true, "PIN e box associati correttamente", operazioneAggiornata));
+            System.out.println("DEBUG before verificaPinEBox call with id=" + id + ", pin=" + pin + ", boxId=" + boxId);
+            operazioneService.verificaPinEBox(id, pin, boxId);
+            System.out.println("DEBUG verificaPinEBox succeeded");
+            return ResponseEntity.ok(new ApiResponseDto(true, "PIN e Box verificati correttamente", null));
         } catch (IllegalArgumentException | IllegalStateException e) {
+            System.out.println("DEBUG verificaPinEBox error: " + e.getMessage());
             return ResponseEntity.badRequest().body(new ApiResponseDto(false, e.getMessage(), null));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponseDto(false, "Errore interno del server", null));
         }
+
     }
 
 

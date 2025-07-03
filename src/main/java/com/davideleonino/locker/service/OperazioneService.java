@@ -4,14 +4,21 @@ import com.davideleonino.locker.dto.response.ApiResponseDto;
 import com.davideleonino.locker.model.*;
 import com.davideleonino.locker.repository.BoxRepository;
 import com.davideleonino.locker.repository.OperazioneRepository;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+
 
 @Service
 public class OperazioneService {
@@ -25,13 +32,6 @@ public class OperazioneService {
     @Autowired
     private BoxService boxService;
 
-
-
-    public Operazione aggiornaStatoOperazione(Operazione operazione, StatoOperazione nuovoStato) {
-        operazione.setStato(nuovoStato);
-        operazione.setDataOrario(LocalDateTime.now());
-        return operazioneRepository.save(operazione);
-    }
 
     public Optional<Operazione> trovaOperazioneAttivaPerPin(String pin, TipoOperazione tipo) {
         validaPin(pin);
@@ -159,67 +159,45 @@ public class OperazioneService {
         return operazioneRepository.save(operazione);
     }
 
-    public Operazione impostaPinEBoxRitiro(Integer operazioneId, String pin, Integer boxId) {
-        validaPin(pin);
 
-        Operazione operazione = operazioneRepository.findById(operazioneId)
-                .orElseThrow(() -> new IllegalArgumentException("Operazione non trovata"));
 
-        if (operazione.getPin() != null && !operazione.getPin().isEmpty()) {
-            throw new IllegalStateException("PIN già impostato");
+    public boolean verificaPinEBox(Integer operazioneRitiroId, String pin, Integer boxId) {
+        Operazione operazioneRitiro = operazioneRepository.findById(operazioneRitiroId)
+                .orElseThrow(() -> new IllegalArgumentException("Operazione di ritiro non trovata con id: " + operazioneRitiroId));
+
+        if (operazioneRitiro.getTipoOperazione() != TipoOperazione.WITHDRAW) {
+            throw new IllegalStateException("Operazione non è di tipo ritiro");
+        }
+        if (operazioneRitiro.getStato() != StatoOperazione.IN_PROGRESS) {
+            throw new IllegalStateException("Operazione di ritiro non è nello stato corretto");
         }
 
-        if (operazione.getBoxAssociato() != null) {
-            throw new IllegalStateException("Box già assegnato");
-        }
+
 
         Box box = boxService.getBoxById(boxId)
                 .orElseThrow(() -> new IllegalArgumentException("Box non trovato"));
 
-        if (box.getStatus() != BoxStatus.OCCUPIED) {
-            throw new IllegalStateException("Box non è occupato e quindi non può essere ritirato");
+        // Qui cercare un'operazione di DEPOSITO corrispondente a pin e box
+        Optional<Operazione> operazioneDepositoOpt = operazioneRepository.findTopByBoxAssociatoIdAndPinOrderByDataOrarioDesc(boxId, pin)
+                .filter(op -> op.getTipoOperazione() == TipoOperazione.DEPOSIT && op.getStato() == StatoOperazione.SUCCESS);
+
+        if (operazioneDepositoOpt.isEmpty()) {
+            throw new IllegalArgumentException("Nessuna operazione di deposito trovata corrispondente a PIN e Box");
         }
 
-        operazione.setPin(pin);
-        operazione.setBoxAssociato(box);
-        return operazioneRepository.save(operazione);
+        // Se tutto ok, associare box e pin all'operazione di ritiro (che è ancora vuota)
+        if (operazioneRitiro.getBoxAssociato() != null || operazioneRitiro.getPin() != null) {
+            throw new IllegalStateException("Operazione di ritiro ha già box o pin associato");
+        }
+
+        operazioneRitiro.setBoxAssociato(box);
+        operazioneRitiro.setPin(pin);
+        operazioneRepository.save(operazioneRitiro);
+
+        return true;
     }
 
-    /*public Operazione apriBoxRitiro(Integer operazioneId, String pin, boolean aperturaSuccesso) {
-        Operazione operazione = operazioneRepository.findById(operazioneId)
-                .orElseThrow(() -> new IllegalArgumentException("Operazione non trovata"));
 
-        if (operazione.getStato() != StatoOperazione.IN_PROGRESS) {
-            throw new IllegalStateException("Operazione già conclusa");
-        }
-
-        if (!operazione.getPin().equals(pin)) {
-            throw new IllegalArgumentException("PIN errato");
-        }
-
-        Box box = operazione.getBoxAssociato();
-        if (box == null) {
-            throw new IllegalStateException("Box non associato all'operazione");
-        }
-
-        if (box.getStatus() != BoxStatus.OCCUPIED) {
-            throw new IllegalStateException("Box non occupato");
-        }
-
-        if (aperturaSuccesso) {
-            // Apertura box riuscita: cambio stato box a AVAILABLE e operazione a SUCCESS
-            box.setStatus(BoxStatus.AVAILABLE);
-            operazione.setStato(StatoOperazione.SUCCESS);
-        } else {
-            // Apertura fallita: operazione chiusa con FAILED, box rimane OCCUPIED
-            operazione.setStato(StatoOperazione.FAILED);
-        }
-
-        boxRepository.save(box);
-        return operazioneRepository.save(operazione);
-    }
-
-     */
 
     public Operazione apriBoxRitiro(Integer operazioneId, String pin, boolean aperturaSuccesso) {
         Operazione operazione = operazioneRepository.findById(operazioneId)
@@ -249,6 +227,32 @@ public class OperazioneService {
     }
 
 
+    //Logica relativa all admin
 
+    public List<Operazione> search(String stato, String fromDate, String toDate) {
+        Specification<Operazione> spec = Specification.where(null);
+
+        if (stato != null && !stato.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("stato"), StatoOperazione.valueOf(stato))
+            );
+        }
+
+        if (fromDate != null && !fromDate.isBlank()) {
+            LocalDateTime from = LocalDate.parse(fromDate).atStartOfDay();
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("dataOrario"), from)
+            );
+        }
+
+        if (toDate != null && !toDate.isBlank()) {
+            LocalDateTime to = LocalDate.parse(toDate).atTime(LocalTime.MAX);
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("dataOrario"), to)
+            );
+        }
+
+        return operazioneRepository.findAll(spec);
+    }
 }
 

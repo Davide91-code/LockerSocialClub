@@ -5,6 +5,7 @@ import com.davideleonino.locker.dto.request.LoginRequest;
 import com.davideleonino.locker.dto.request.AssegnaPinRequest;
 import com.davideleonino.locker.dto.response.ApiResponseDto;
 import com.davideleonino.locker.model.AdminUser;
+import com.davideleonino.locker.model.Box;
 import com.davideleonino.locker.model.Operazione;
 import com.davideleonino.locker.security.JwtUtil;
 import com.davideleonino.locker.service.AdminUserService;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,6 +37,34 @@ public class AdminUserController {
 
     @Autowired
     private OperazioneService operazioneService;
+
+    @GetMapping("/boxes")
+    public ResponseEntity<ApiResponseDto> getAllBoxes() {
+        List<Box> boxes = boxService.getAllBoxes();
+        return ResponseEntity.ok(new ApiResponseDto(true, "Lista di tutti i box", boxes));
+    }
+
+    @GetMapping("/operations/{id}") //utile per verificare lo stato di operazione (spostatre in admin controller)
+    public ResponseEntity<ApiResponseDto> getOperazioneById(@PathVariable Integer id) {
+        Optional<Operazione> operazioneOpt = operazioneService.findById(id);
+        if (operazioneOpt.isPresent()) {
+            return ResponseEntity.ok(new ApiResponseDto(true, "Operazione trovata", operazioneOpt.get()));
+        } else {
+            return ResponseEntity.status(404).body(new ApiResponseDto(false, "Operazione non trovata", null));
+        }
+    }
+
+    @GetMapping("/operations")
+    public ResponseEntity<ApiResponseDto> getOperations(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate
+    ) {
+        List<Operazione> ops = operazioneService.search(status, fromDate, toDate);
+        return ResponseEntity.ok(new ApiResponseDto(true, "Registro operazioni", ops));
+    }
+
+
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponseDto> login(@Valid @RequestBody LoginRequest request) {
@@ -86,15 +116,6 @@ public class AdminUserController {
                 .orElse(ResponseEntity.status(404).body(new ApiResponseDto(false, "Admin non trovato", null)));
     }
 
-    @GetMapping("/operations/{id}") //utile per verificare lo stato di operazione (spostatre in admin controller)
-    public ResponseEntity<ApiResponseDto> getOperazioneById(@PathVariable Integer id) {
-        Optional<Operazione> operazioneOpt = operazioneService.findById(id);
-        if (operazioneOpt.isPresent()) {
-            return ResponseEntity.ok(new ApiResponseDto(true, "Operazione trovata", operazioneOpt.get()));
-        } else {
-            return ResponseEntity.status(404).body(new ApiResponseDto(false, "Operazione non trovata", null));
-        }
-    }
 
     @PutMapping("/boxes/{id}/status")
     public ResponseEntity<ApiResponseDto> changeBoxStatus(
