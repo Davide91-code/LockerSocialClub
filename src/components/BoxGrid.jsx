@@ -11,6 +11,7 @@ export default function BoxGrid({ operazioneId, onBoxSelected, refreshKey }) {
       try {
         const response = await api.get('/boxes'); // o '/boxes/available' in base al contesto
         setBoxes(response.data.data);
+        setError('');
       } catch (err) {
         console.error(err);
         setError('Errore nel caricare i box');
@@ -20,21 +21,7 @@ export default function BoxGrid({ operazioneId, onBoxSelected, refreshKey }) {
     fetchBoxes();
   }, [operazioneId, refreshKey]); // ricarica ogni volta che cambia
 
-  const handleSelectBox = async (boxId) => {
-  try {
-    const response = await api.post(`/deposit/${operazioneId}/select-box`, { boxId });
-    console.log("✅ Select-box response:", response.data);
-    onBoxSelected(response.data.data.boxAssociato); 
-  } catch (err) {
-    console.error("❌ Errore nella selezione del box:", err);
-    if (err.response) {
-      console.error("Response data:", err.response.data);
-      console.error("Status code:", err.response.status);
-    }
-    setError('Errore nella selezione del box');
-  }
-};
-
+  
 
   if (error) return <p style={{ color: 'red' }}>{error}</p>;
 
@@ -46,7 +33,7 @@ export default function BoxGrid({ operazioneId, onBoxSelected, refreshKey }) {
           <motion.button
             key={box.id}
             className={`box-button ${box.status?.toLowerCase() || 'unknown'}`}
-            onClick={() => handleSelectBox(box.id)}
+            onClick={() => onBoxSelected(box.id)}
             disabled={box.status !== 'FREE'}
             whileTap={{ scale: box.status === 'FREE' ? 0.95 : 1 }}
             transition={{ duration: 0.1 }}

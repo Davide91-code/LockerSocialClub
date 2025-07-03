@@ -1,19 +1,18 @@
 import { useState } from 'react';
 import api from '../services/api';
-import FadeUpContainer from '../components/FadeUpContainer';
 import AnimatedButton from '../components/AnimatedButton';
 import FeedbackMessage from '../components/FeedBackMessage';
-import PinFormRitiro from '../components/PinFormRitiro';
-import BoxGrid from '../components/BoxGrid';
 
 export default function Ritiro() {
   const [operazioneId, setOperazioneId] = useState(null);
-  const [message, setMessage] = useState('');
-  const [step, setStep] = useState('start');
   const [pin, setPin] = useState('');
-  const [boxSelected, setBoxSelected] = useState(null);
+  const [boxId, setBoxId] = useState('');
+  const [message, setMessage] = useState('');
+  const [step, setStep] = useState('start'); // start, verify, openBox, completed
   const [loading, setLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [operazioneAggiornata, setOperazioneAggiornata] = useState(null); // <-- nuovo stato
+
+  const isValidPin = (pin) => /^\d{6}$/.test(pin);
 
   const startRitiro = async () => {
     setLoading(true);
@@ -21,42 +20,57 @@ export default function Ritiro() {
       const res = await api.post('/withdraw/start');
       if (res.data.success) {
         setOperazioneId(res.data.data.id);
-        setStep('selectBox');
+        setStep('verify');
         setMessage('');
+        setPin('');
+        setBoxId('');
+        setOperazioneAggiornata(null);
+      } else {
+        setMessage(res.data.message || 'Errore inizio ritiro');
       }
-    } catch {
-      setMessage('Errore inizio ritiro');
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Errore inizio ritiro');
     } finally {
       setLoading(false);
     }
   };
 
-  const onBoxSelected = (box) => {
-    setBoxSelected(box);
-    setStep('setPinBox');
-    setMessage(`Selezionato Box ${box.numBox}`);
-  };
-
-  const setPinAndBox = async () => {
-    if (!pin || !boxSelected) {
-      setMessage('Inserisci PIN e seleziona un box');
+  const verifyPinAndBox = async () => {
+    if (!pin || !boxId) {
+      setMessage('Inserisci PIN e Box ID');
       return;
     }
+    if (!isValidPin(pin)) {
+      setMessage('Il PIN deve essere composto da 6 cifre');
+      return;
+    }
+
+    
+
+  console.log('operazioneId:', operazioneId);
+  console.log('pin:', pin);
+  console.log('boxId:', boxId, 'parsed:', parseInt(boxId, 10));
+
     setLoading(true);
     try {
-      const res = await api.post(`/withdraw/${operazioneId}/set-pin-and-box`, {
+      const res = await api.post(`/withdraw/${operazioneId}/verify-pin-and-box`, {
         pin,
-        boxId: boxSelected.id,
+        boxId: parseInt(boxId, 10),
       });
       if (res.data.success) {
         setStep('openBox');
-        setMessage('PIN e Box associati correttamente');
+        setMessage('PIN e Box verificati correttamente');
       } else {
-        setMessage(res.data.message);
+        setMessage(res.data.message || 'Errore durante la verifica');
       }
     } catch (error) {
-      console.error(error);
-      setMessage(error.response?.data?.message || "Errore nell'associazione PIN e Box");
+      setMessage(
+        error.response?.data?.message
+          ? `Errore: ${error.response.data.message}`
+          : error.message
+          ? `Errore: ${error.message}`
+          : 'Errore durante la comunicazione con il server'
+      );
     } finally {
       setLoading(false);
     }
@@ -67,48 +81,80 @@ export default function Ritiro() {
     try {
       const res = await api.post(`/withdraw/${operazioneId}/open-box`, {
         pin,
-        aperturaSuccesso: true
+        aperturaSuccesso: true,
       });
       if (res.data.success) {
-        setMessage('Sportello aperto, ritira il contenuto');
+        setOperazioneAggiornata(res.data.data); // salva i dati aggiornati
+        setMessage(res.data.message);
         setStep('completed');
-        setRefreshKey(prev => prev + 1);
       } else {
-        setMessage('Contattare assistenza');
+        setMessage(res.data.message || 'Contattare assistenza');
       }
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Errore apertura box');
+      setMessage(
+        err.response?.data?.message
+          ? `Errore: ${err.response.data.message}`
+          : err.message
+          ? `Errore: ${err.message}`
+          : 'Errore apertura box'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <FadeUpContainer>
+    <div>
       <h1>Ritiro</h1>
-      {step === 'start' &&
+
+      {step === 'start' && (
         <AnimatedButton onClick={startRitiro} disabled={loading}>
           {loading ? 'Caricamento...' : 'Inizia Ritiro'}
-        </AnimatedButton>}
-      {step === 'selectBox' && operazioneId &&
-        <BoxGrid
-          operazioneId={operazioneId}
-          refreshKey={refreshKey}
-          onBoxSelected={onBoxSelected}
-        />}
-      {step === 'setPinBox' && boxSelected &&
+        </AnimatedButton>
+      )}
+
+      {step === 'verify' && (
         <>
-          <p>Hai selezionato: Box {boxSelected.numBox}</p>
-          <PinFormRitiro pin={pin} onChange={setPin} />
-          <AnimatedButton onClick={setPinAndBox} disabled={loading}>
-            {loading ? 'Associazione in corso...' : 'Associa PIN e Box'}
+          <input
+            type="number"
+            placeholder="Box ID"
+            value={boxId}
+            onChange={(e) => setBoxId(e.target.value)}
+            disabled={loading}
+          />
+          <input
+            type="password"
+            placeholder="PIN"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            disabled={loading}
+          />
+          <AnimatedButton onClick={verifyPinAndBox} disabled={loading}>
+            {loading ? 'Verifica in corso...' : 'Verifica PIN e Box'}
           </AnimatedButton>
-        </>}
-      {step === 'openBox' &&
+        </>
+      )}
+
+      {step === 'openBox' && (
         <AnimatedButton onClick={openBox} disabled={loading}>
           {loading ? 'Apertura in corso...' : 'Apri Box'}
-        </AnimatedButton>}
-      {message && <FeedbackMessage text={message} />}
-    </FadeUpContainer>
+        </AnimatedButton>
+      )}
+
+      {step === 'completed' && operazioneAggiornata && (
+        <div>
+          <p>{message}</p>
+          <p>
+            Box ID: {operazioneAggiornata.boxAssociato.id} (Num: {operazioneAggiornata.boxAssociato.numBox}) - Stato:{' '}
+            {operazioneAggiornata.boxAssociato.status}
+          </p>
+          <AnimatedButton onClick={startRitiro} disabled={loading}>
+            Nuovo Ritiro
+          </AnimatedButton>
+        </div>
+      )}
+
+      {message && step !== 'completed' && <FeedbackMessage text={message} />}
+    </div>
   );
 }

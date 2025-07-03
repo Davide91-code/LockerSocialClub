@@ -19,23 +19,26 @@ export default function Deposit() {
       if (res.data.success) {
         setOperazioneId(res.data.data.id);
         setStep('selectBox');
+        setMessage('');
       }
     } catch {
       setMessage('Errore nel creare operazione deposito');
     }
   };
 
-  const selectBox = async (box) => {
+  const selectBox = async (boxId) => {
     try {
-      const res = await api.post(`/deposit/${operazioneId}/select-box`, { boxId: box.id });
+      const res = await api.post(`/deposit/${operazioneId}/select-box`, { boxId });
       if (res.data.success) {
-        setPin(''); // reset pin per sicurezza
         setStep('setPin');
+        setMessage('');
+        setPin('');  // reset pin per sicurezza
       } else {
-        setMessage(res.data.message);
+        setMessage(res.data.message || 'Errore nella selezione box');
       }
-    } catch {
-      setMessage('Errore nella selezione box');
+    } catch (err) {
+    console.error("Errore selectBox:", err);
+    setMessage('Errore nella selezione box');
     }
   };
 
@@ -55,7 +58,7 @@ export default function Deposit() {
         setStep('completed');
         setRefreshKey(prev => prev + 1); // forza refresh della griglia
       } else {
-        setMessage(res.data.message);
+        setMessage(res.data.message || "Errore nell'apertura box");
       }
     } catch {
       setMessage("Errore nell'apertura box");
