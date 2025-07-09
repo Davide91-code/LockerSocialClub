@@ -2,7 +2,7 @@ import AnimatedButton from '../AnimatedButton';
 import FadeUpContainer from '../FadeUpContainer';
 
 export default function BoxStatusCard({ box, onChangeStatus }) {
-  const statuses = ['AVAILABLE', 'OCCUPIED', 'DISABLED_MANUAL', 'DISABLED_TEMP'];
+  const statuses = ['FREE', 'OCCUPIED', 'DISABLED', 'DISABLED_TEMP', 'RESERVED'];
   return (
     <FadeUpContainer>
       <h3>Box {box.numBox}</h3>

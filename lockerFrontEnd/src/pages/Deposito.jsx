@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import api from '../services/api';
 import PinForm from '../components/PinForm';
 import FadeUpContainer from '../components/FadeUpContainer';
 import AnimatedButton from '../components/AnimatedButton';
-import FeedbackMessage from '../components/FeedBackMessage';
+import FeedBackMessage from '../components/FeedBackMessage';
 import BoxGrid from '../components/BoxGrid';
 
 export default function Deposit() {
@@ -12,51 +12,53 @@ export default function Deposit() {
   const [step, setStep] = useState('start');
   const [pin, setPin] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedBoxId, setSelectedBoxId] = useState(null);
+  const [selectedNumBox, setSelectedNumBox] = useState(null);
 
   const startDeposito = async () => {
+    setMessage('');
     try {
       const res = await api.post('/deposit/start');
-      if (res.data.success) {
-        setOperazioneId(res.data.data.id);
-        setStep('selectBox');
-        setMessage('');
-      }
+      setOperazioneId(res.data.data.id);
+      setStep('selectBox');
+      setSelectedBoxId(null);
+      setSelectedNumBox(null);
     } catch {
       setMessage('Errore nel creare operazione deposito');
     }
   };
 
-  const selectBox = async (boxId) => {
+  const selectBox = async (boxId, numBox) => {
+    setMessage('');
+    setSelectedBoxId(boxId);
     try {
       const res = await api.post(`/deposit/${operazioneId}/select-box`, { boxId });
-      if (res.data.success) {
-        setStep('setPin');
-        setMessage('');
-        setPin('');  // reset pin per sicurezza
-      } else {
-        setMessage(res.data.message || 'Errore nella selezione box');
-      }
+      const { numBox: nb } = res.data;
+      setSelectedNumBox(nb);
+      setMessage(`Box #${nb} selezionato e riservato`);
+      setStep('setPin');
     } catch (err) {
-    console.error("Errore selectBox:", err);
-    setMessage('Errore nella selezione box');
+      setMessage(err.response?.data?.message || 'Errore nella selezione box');
+      setSelectedBoxId(null);
     }
   };
 
-  const onPinSuccess = (enteredPin) => {
+  const onPinSuccess = enteredPin => {
     setPin(enteredPin);
     setStep('openBox');
   };
 
   const openBox = async () => {
+    setMessage('');
     try {
       const res = await api.post(`/deposit/${operazioneId}/open-box`, {
         pin,
-        aperturaSuccesso: true,
+        aperturaSuccesso: true
       });
       if (res.data.success) {
-        setMessage('Box aperto con successo');
+        setMessage(`Deposito completato nel Box #${selectedNumBox}!`);
         setStep('completed');
-        setRefreshKey(prev => prev + 1); // forza refresh della griglia
+        setRefreshKey(prev => prev + 1);
       } else {
         setMessage(res.data.message || "Errore nell'apertura box");
       }
@@ -68,20 +70,39 @@ export default function Deposit() {
   return (
     <FadeUpContainer>
       <h1>Deposito</h1>
+
       {step === 'start' &&
-        <AnimatedButton onClick={startDeposito}>Inizia Deposito</AnimatedButton>}
+        <AnimatedButton onClick={startDeposito}>Inizia Deposito</AnimatedButton>
+      }
+
       {step === 'selectBox' && operazioneId &&
         <BoxGrid
-          operazioneId={operazioneId}
+          key={refreshKey}
           refreshKey={refreshKey}
           onBoxSelected={selectBox}
-        />}
-      {step === 'setPin' && operazioneId &&
-        <PinForm operazioneId={operazioneId} onPinSuccess={onPinSuccess} />}
+          selectedBoxId={selectedBoxId}
+          mode="deposit"
+        />
+      }
+
+      {step === 'setPin' &&
+        <PinForm operazioneId={operazioneId} onPinSuccess={onPinSuccess} />
+      }
+
       {step === 'openBox' &&
-        <AnimatedButton onClick={openBox}>Apri Box</AnimatedButton>}
-      {message && <FeedbackMessage text={message} />}
+        <AnimatedButton onClick={openBox}>Apri Box #{selectedNumBox}</AnimatedButton>
+      }
+
+      {step === 'completed' &&
+        <>
+          <FeedBackMessage text={message} />
+          <AnimatedButton onClick={startDeposito}>Nuovo Deposito</AnimatedButton>
+        </>
+      }
+
+      {message && step !== 'completed' &&
+        <FeedBackMessage text={message} />
+      }
     </FadeUpContainer>
   );
 }
-

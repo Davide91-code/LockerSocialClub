@@ -23,7 +23,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #6A0DAD;
+  background-color: #180dad;
   color: white;
   padding: 1rem;
 }
@@ -50,8 +50,8 @@ button {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  background-color: #6A0DAD;
-  color: white;
+  background-color: #0d7aad;
+  color: rgb(255, 255, 255);
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
@@ -97,7 +97,8 @@ button:disabled {
   border: 1px solid #ccc;
   cursor: pointer;
   user-select: none;
-  background-color: #fff;
+  background-color: #180dad;
+  color: white;
 }
 
 .submit-btn {

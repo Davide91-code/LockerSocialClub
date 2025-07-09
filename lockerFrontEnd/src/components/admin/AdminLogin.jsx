@@ -23,7 +23,7 @@ export default function AdminLogin({ onLoginSuccess }) {
       <input value={u} onChange={e => setU(e.target.value)} placeholder="Username" />
       <input type="password" value={p} onChange={e => setP(e.target.value)} placeholder="Password" />
       <AnimatedButton onClick={handleLogin}>Login</AnimatedButton>
-      {err && <FeedbackMessage text={err} type="error" />}
+      {err && <FeedBackMessage text={err} type="error" />}
     </div>
   );
 }

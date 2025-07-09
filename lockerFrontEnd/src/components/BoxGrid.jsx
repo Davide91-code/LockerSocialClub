@@ -1,41 +1,40 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import { motion } from 'framer-motion';
 
-export default function BoxGrid({ operazioneId, onBoxSelected, refreshKey }) {
+export default function BoxGrid({ onBoxSelected, refreshKey, selectedBoxId, mode = 'deposit' }) {
   const [boxes, setBoxes] = useState([]);
   const [error, setError] = useState('');
 
-   useEffect(() => {
-    const fetchBoxes = async () => {
-      try {
-        const response = await api.get('/boxes'); // o '/boxes/available' in base al contesto
-        setBoxes(response.data.data);
+  const endpoint = mode === 'withdrawal' ? '/boxes/occupied' : '/boxes/available';
+  const isClickableStatus = mode === 'withdrawal' ? 'OCCUPIED' : 'FREE';
+
+  useEffect(() => {
+    api.get(endpoint)
+      .then(res => {
+        console.log('BOXES from', endpoint, res.data.data);
+        setBoxes(res.data.data);
         setError('');
-      } catch (err) {
-        console.error(err);
-        setError('Errore nel caricare i box');
-      }
-    };
-
-    fetchBoxes();
-  }, [operazioneId, refreshKey]); // ricarica ogni volta che cambia
-
-  
+      })
+      .catch(() => setError('Errore nel caricare i box'));
+  }, [refreshKey, endpoint]);
 
   if (error) return <p style={{ color: 'red' }}>{error}</p>;
 
   return (
     <div className="box-grid">
-      <h3>Seleziona un box</h3>
+      <h3>{mode === 'withdrawal' ? 'Box Occupati' : 'Box Disponibili'}</h3>
       <div className="grid">
-        {boxes.map((box) => (
+        {boxes.map(box => (
           <motion.button
             key={box.id}
-            className={`box-button ${box.status?.toLowerCase() || 'unknown'}`}
-            onClick={() => onBoxSelected(box.id)}
-            disabled={box.status !== 'FREE'}
-            whileTap={{ scale: box.status === 'FREE' ? 0.95 : 1 }}
+            className={`
+              box-button ${box.status?.toLowerCase() || 'unknown'}
+              ${box.id === selectedBoxId ? 'selected' : ''}
+            `}
+            onClick={() => box.status === isClickableStatus && onBoxSelected(box.id, box.numBox)}
+            disabled={box.status !== isClickableStatus || box.id === selectedBoxId}
+            whileTap={{ scale: box.status === isClickableStatus ? 0.95 : 1 }}
             transition={{ duration: 0.1 }}
           >
             Box {box.numBox}
