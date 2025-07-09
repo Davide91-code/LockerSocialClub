@@ -117,6 +117,7 @@ public class AdminUserController {
     }
 
 
+    /*
     @PutMapping("/boxes/{id}/status")
     public ResponseEntity<ApiResponseDto> changeBoxStatus(
             @PathVariable Integer id,
@@ -126,6 +127,24 @@ public class AdminUserController {
                 .map(box -> ResponseEntity.ok(new ApiResponseDto(true, "Stato box aggiornato", box)))
                 .orElse(ResponseEntity.status(404).body(new ApiResponseDto(false, "Box non trovato", null)));
     }
+
+     */
+
+    @PutMapping("/boxes/{id}/status")
+    public ResponseEntity<ApiResponseDto> changeBoxStatus(
+            @PathVariable Integer id,
+            @Valid @RequestBody ChangeStatusRequest request
+    ) {
+        try {
+            Box updatedBox = boxService.changeBoxStatus(id, request.getStatus());
+            return ResponseEntity.ok(new ApiResponseDto(true, "Stato box aggiornato", updatedBox));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new ApiResponseDto(false, e.getMessage(), null));
+        }
+    }
+
 
 
 }

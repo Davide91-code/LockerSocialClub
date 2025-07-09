@@ -45,6 +45,7 @@ public class BoxService {
         return boxRepository.findByStatusIn(statuses);
     }
 
+    /*
     public Optional<Box> changeBoxStatus(Integer boxId, BoxStatus newStatus) {
         return boxRepository.findById(boxId).map(box -> {
 
@@ -59,6 +60,24 @@ public class BoxService {
             return boxRepository.save(box);
         });
     }
+
+     */
+
+    public Box changeBoxStatus(Integer boxId, BoxStatus newStatus) {
+        return boxRepository.findById(boxId)
+                .map(box -> {
+                    if (box.getStatus() == BoxStatus.DISABLED && newStatus == BoxStatus.OCCUPIED) {
+                        throw new IllegalStateException("Non puoi occupare un box disabilitato");
+                    }
+                    if (box.getStatus() == BoxStatus.OCCUPIED && newStatus == BoxStatus.RESERVED) {
+                        throw new IllegalStateException("Box già occupato, non può essere riservato");
+                    }
+                    box.setStatus(newStatus);
+                    return boxRepository.save(box);
+                })
+                .orElseThrow(() -> new IllegalArgumentException("Box con ID " + boxId + " non trovato"));
+    }
+
 
     // Libera un box manualmente (lo imposta a FREE)
 

@@ -1,4 +1,3 @@
-// ApiResponseDto.java
 package com.davideleonino.locker.dto.response;
 
 public class ApiResponseDto {

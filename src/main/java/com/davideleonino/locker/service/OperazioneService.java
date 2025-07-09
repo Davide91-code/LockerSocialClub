@@ -161,7 +161,7 @@ public class OperazioneService {
 
 
 
-    public boolean verificaPinEBox(Integer operazioneRitiroId, String pin, Integer boxId) {
+    /*public boolean verificaPinEBox(Integer operazioneRitiroId, String pin, Integer boxId) {
         Operazione operazioneRitiro = operazioneRepository.findById(operazioneRitiroId)
                 .orElseThrow(() -> new IllegalArgumentException("Operazione di ritiro non trovata con id: " + operazioneRitiroId));
 
@@ -196,6 +196,59 @@ public class OperazioneService {
 
         return true;
     }
+
+     */
+
+    public boolean verificaPinEBox(Integer operazioneRitiroId, String pin, Integer boxId) {
+        System.out.println("DEBUG Service: INIZIO verificaPinEBox con ritiroId=" + operazioneRitiroId + ", pin=" + pin + ", boxId=" + boxId);
+
+        Operazione operazioneRitiro = operazioneRepository.findById(operazioneRitiroId)
+                .orElseThrow(() -> new IllegalArgumentException("Operazione di ritiro non trovata con id: " + operazioneRitiroId));
+
+        if (operazioneRitiro.getTipoOperazione() != TipoOperazione.WITHDRAW) {
+            throw new IllegalStateException("Operazione non è di tipo ritiro");
+        }
+
+        if (operazioneRitiro.getStato() != StatoOperazione.IN_PROGRESS) {
+            throw new IllegalStateException("Operazione di ritiro non è nello stato corretto");
+        }
+
+        Box box = boxService.getBoxById(boxId)
+                .orElseThrow(() -> new IllegalArgumentException("Box non trovato"));
+
+        // Usa il tuo metodo esistente
+        Optional<Operazione> operazioneDepositoOpt = operazioneRepository.findTopByBoxAssociatoIdAndPinOrderByDataOrarioDesc(boxId, pin);
+
+        if (operazioneDepositoOpt.isEmpty()) {
+            System.out.println("DEBUG: Nessuna operazione trovata per quel boxId e pin");
+            throw new IllegalArgumentException("Nessuna operazione trovata per quel boxId e pin");
+        }
+
+        Operazione operazioneDeposito = operazioneDepositoOpt.get();
+
+        System.out.println("DEBUG: Operazione trovata: ID=" + operazioneDeposito.getId()
+                + ", tipo=" + operazioneDeposito.getTipoOperazione()
+                + ", stato=" + operazioneDeposito.getStato());
+
+        // Verifica tipo e stato
+        if (operazioneDeposito.getTipoOperazione() != TipoOperazione.DEPOSIT ||
+                operazioneDeposito.getStato() != StatoOperazione.SUCCESS) {
+            throw new IllegalArgumentException("Nessuna operazione di deposito valida trovata con PIN e Box");
+        }
+
+        if (operazioneRitiro.getBoxAssociato() != null || operazioneRitiro.getPin() != null) {
+            throw new IllegalStateException("Operazione di ritiro ha già box o pin associato");
+        }
+
+        operazioneRitiro.setBoxAssociato(box);
+        operazioneRitiro.setPin(pin);
+        operazioneRepository.save(operazioneRitiro);
+
+        System.out.println("DEBUG: Operazione di ritiro aggiornata con PIN e box");
+
+        return true;
+    }
+
 
 
 
