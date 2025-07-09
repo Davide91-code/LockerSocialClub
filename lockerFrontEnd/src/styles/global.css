@@ -1,0 +1,122 @@
+/* Reset immagini per non superare mai la larghezza del contenitore */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block; /* evita spazi indesiderati sotto l'immagine */
+}
+
+/* Layout generale */
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+.layout-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.layout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #6A0DAD;
+  color: white;
+  padding: 1rem;
+}
+
+/* Dimensioni del logo */
+.layout-header img {
+  height: 60px;
+  width: auto;
+  max-width: 100%;
+}
+
+/* Area principale */
+.layout-main {
+  flex-grow: 1;
+  padding: 2rem;
+  background-color: white;
+}
+
+/* Bottoni generici */
+button {
+  font-size: 1.2rem;
+  padding: 1rem 2rem;
+  margin: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: #6A0DAD;
+  color: white;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+button:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+}
+
+/* Pin input */
+.pin-input {
+  font-size: 1.5rem;
+  letter-spacing: 0.3rem;
+  border: none;
+  background: transparent;
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.pinpad {
+  max-width: 200px;
+  margin: 0 auto 1rem auto;
+}
+
+.digits-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  justify-items: center;
+}
+
+.pin-button {
+  font-size: 1.5rem;
+  padding: 1rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  user-select: none;
+  background-color: #fff;
+}
+
+.submit-btn {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-msg {
+  color: red;
+  margin-top: 0.5rem;
+}
+
+.success-msg {
+  color: green;
+  margin-top: 0.5rem;
+}
