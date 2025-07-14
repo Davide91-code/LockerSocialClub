@@ -5,6 +5,10 @@ import FadeUpContainer from '../components/FadeUpContainer';
 import AnimatedButton from '../components/AnimatedButton';
 import FeedBackMessage from '../components/FeedBackMessage';
 import BoxGrid from '../components/BoxGrid';
+import BackToHomeButton from '../components/BackToHomeButton';
+import BackButton from '../components/BackButton';
+import { useLanguage } from '../context/LanguageContext';
+import translations from '../translations';
 
 export default function Deposit() {
   const [operazioneId, setOperazioneId] = useState(null);
@@ -14,6 +18,8 @@ export default function Deposit() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedBoxId, setSelectedBoxId] = useState(null);
   const [selectedNumBox, setSelectedNumBox] = useState(null);
+  const { lang } = useLanguage();
+  const t = translations[lang];
 
   const startDeposito = async () => {
     setMessage('');
@@ -35,10 +41,10 @@ export default function Deposit() {
       const res = await api.post(`/deposit/${operazioneId}/select-box`, { boxId });
       const { numBox: nb } = res.data;
       setSelectedNumBox(nb);
-      setMessage(`Box #${nb} selezionato e riservato`);
+      setMessage(`Box #${nb} ${t.selectedAndReserved}`);
       setStep('setPin');
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Errore nella selezione box');
+      setMessage(err.response?.data?.message || t.selectBoxError);
       setSelectedBoxId(null);
     }
   };
@@ -56,49 +62,83 @@ export default function Deposit() {
         aperturaSuccesso: true
       });
       if (res.data.success) {
-        setMessage(`Deposito completato nel Box #${selectedNumBox}!`);
+        setMessage(`${t.CompletedDeposit} #${selectedNumBox}!`);
         setStep('completed');
         setRefreshKey(prev => prev + 1);
       } else {
-        setMessage(res.data.message || "Errore nell'apertura box");
+        setMessage(res.data.message || t.openBoxError);
       }
     } catch {
-      setMessage("Errore nell'apertura box");
+      setMessage(t.openBoxError);
     }
   };
 
   return (
     <FadeUpContainer>
-      <h1>Deposito</h1>
+      <h1>{t.deposit}</h1>
 
-      {step === 'start' &&
-        <AnimatedButton onClick={startDeposito}>Inizia Deposito</AnimatedButton>
-      }
+      {step === 'start' && (
+      <div className="step-container">
+        <AnimatedButton style={{
+              fontSize: '2.5rem',
+              padding: '2rem 1rem',
+              width: '100%',
+              borderRadius: '16px',
+              maxWidth: 'none',
+              margin: 0,
+            }} onClick={startDeposito}>{t.startDeposit}</AnimatedButton>
+      </div>
+      )}
 
-      {step === 'selectBox' && operazioneId &&
+      {step === 'selectBox' && operazioneId && (
+      <div className="step-container">
         <BoxGrid
           key={refreshKey}
           refreshKey={refreshKey}
           onBoxSelected={selectBox}
           selectedBoxId={selectedBoxId}
           mode="deposit"
-        />
-      }
+         />
+        <BackButton label={`${t.back}`} />
+                </div>
+      )}
 
-      {step === 'setPin' &&
+      {step === 'setPin' && (
+      <div className="step-container">
         <PinForm operazioneId={operazioneId} onPinSuccess={onPinSuccess} />
-      }
+      <BackButton label={`${t.back}`}/>
+              </div>
+      )}
 
-      {step === 'openBox' &&
-        <AnimatedButton onClick={openBox}>Apri Box #{selectedNumBox}</AnimatedButton>
-      }
+      {step === 'openBox' && (
+      <div className="step-container">
+        <AnimatedButton style={{
+              fontSize: '2.5rem',
+              padding: '2rem 1rem',
+              width: '100%',
+              borderRadius: '16px',
+              maxWidth: 'none',
+              margin: 0,
+            }} onClick={openBox}>{`${t.openBox} #${selectedNumBox}`}</AnimatedButton>
+      <BackButton label={`${t.back}`}/>
+              </div>
+      )}
 
-      {step === 'completed' &&
-        <>
-          <FeedBackMessage text={message} />
-          <AnimatedButton onClick={startDeposito}>Nuovo Deposito</AnimatedButton>
-        </>
-      }
+      {step === 'completed' && (
+  <div className="step-container">
+    <FeedBackMessage text={message} />
+    <AnimatedButton style={{
+              fontSize: '2.5rem',
+              padding: '2rem 1rem',
+              width: '100%',
+              borderRadius: '16px',
+              maxWidth: 'none',
+              margin: 0,
+            }} onClick={startDeposito}>{t.newDeposit}</AnimatedButton>
+    <BackToHomeButton label={t.backToHome}/>
+  </div>
+)}
+
 
       {message && step !== 'completed' &&
         <FeedBackMessage text={message} />

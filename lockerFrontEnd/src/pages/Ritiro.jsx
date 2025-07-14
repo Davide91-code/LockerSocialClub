@@ -4,14 +4,18 @@ import AnimatedButton from '../components/AnimatedButton';
 import FadeUpContainer from '../components/FadeUpContainer';
 import FeedBackMessage from '../components/FeedBackMessage';
 import BoxGrid from '../components/BoxGrid';
+import BackToHomeButton from '../components/BackToHomeButton';
+import BackButton from '../components/BackButton';
+import { useTranslation } from 'react-i18next';
 
 export default function Ritiro() {
   const [operazioneId, setOperazioneId] = useState(null);
   const [message, setMessage] = useState('');
-  const [step, setStep] = useState('start'); // start, selectBox, verify, openBox, completed
+  const [step, setStep] = useState('start'); 
   const [loading, setLoading] = useState(false);
   const [selection, setSelection] = useState({ boxId: null, numBox: null, pin: '' });
   const [operazioneAggiornata, setOperazioneAggiornata] = useState(null);
+  const { t } = useTranslation();
 
   const startRitiro = async () => {
     setMessage('');
@@ -21,7 +25,7 @@ export default function Ritiro() {
       setOperazioneId(res.data.data.id);
       setStep('selectBox');
     } catch (e) {
-      setMessage(e.response?.data?.message || 'Errore inizio ritiro');
+      setMessage(e.response?.data?.message || t('errorStartWithdraw'));
     } finally {
       setLoading(false);
     }
@@ -30,13 +34,13 @@ export default function Ritiro() {
   const selectBox = (boxId, numBox) => {
     setSelection(sel => ({ ...sel, boxId, numBox }));
     setStep('verify');
-    setMessage(`Box #${numBox} selezionato, inserisci PIN`);
+    setMessage(t('boxSelectedInsertPin', { numBox }));
   };
 
   const verifyPinAndBox = async () => {
     const { boxId, pin } = selection;
     if (!boxId || !/^\d{6}$/.test(pin)) {
-      setMessage('Inserisci Box e PIN validi (6 cifre)');
+      setMessage(t('insertValidBoxPin'));
       return;
     }
     setLoading(true);
@@ -46,9 +50,9 @@ export default function Ritiro() {
         boxId
       });
       setStep('openBox');
-      setMessage('Verifica riuscita — ora apri il box');
+      setMessage(t('verificationSuccessOpenBox'));
     } catch (e) {
-      setMessage(e.response?.data?.message || 'Errore verifica');
+      setMessage(e.response?.data?.message || t('errorVerification'));
       setStep('verify');
     } finally {
       setLoading(false);
@@ -63,10 +67,10 @@ export default function Ritiro() {
         aperturaSuccesso: true
       });
       setOperazioneAggiornata(res.data.data);
-      setMessage(res.data.message || 'Ritiro completato');
+      setMessage(res.data.message || 'Ritiro completato'); //tornare
       setStep('completed');
     } catch (e) {
-      setMessage(e.response?.data?.message || 'Errore apertura box');
+      setMessage(e.response?.data?.message || t('errorOpenBox'));
       setStep('verify');
     } finally {
       setLoading(false);
@@ -75,53 +79,83 @@ export default function Ritiro() {
 
   return (
     <FadeUpContainer>
-      <h1>Ritiro</h1>
+      <h1>{t('withdraw')}</h1>
       {step === 'start' && (
-        <AnimatedButton onClick={startRitiro} disabled={loading}>
+        <div className="step-container">
+        <AnimatedButton style={{
+              fontSize: '2.5rem',
+              padding: '2rem 1rem',
+              width: '100%',
+              borderRadius: '16px',
+              maxWidth: 'none',
+              margin: 0,
+            }} onClick={startRitiro} disabled={loading}>
           {loading ? '...' : 'Inizia Ritiro'}
         </AnimatedButton>
+        </div>
       )}
 
       {step === 'selectBox' && (
+        <div className="step-container">
         <BoxGrid
           refreshKey={operazioneId}
           selectedBoxId={selection.boxId}
           onBoxSelected={selectBox}
           mode="withdrawal"
         />
+        <BackButton label={`${t('back')}`} />
+        </div>
       )}
 
       {step === 'verify' && (
-        <>
-          <p>Box selezionato: #{selection.numBox}</p>
+        <div className="step-container">
+          <p>{t('selectedBoxNumber', { numBox: selection.numBox })}</p>
           <input
             type="password"
-            placeholder="Inserisci PIN (6 cifre)"
+            placeholder={t('insertPin6Digits')}
             value={selection.pin}
             maxLength={6}
             onChange={e => setSelection(sel => ({ ...sel, pin: e.target.value }))}
             disabled={loading}
           />
           <AnimatedButton onClick={verifyPinAndBox} disabled={loading}>
-            Verifica PIN
+            {t('verifyPin')}
           </AnimatedButton>
-        </>
+        <BackButton label={`${t('back')}`} />
+  </div>
       )}
 
       {step === 'openBox' && (
-        <AnimatedButton onClick={openBox} disabled={loading}>
-          Apri Box #{selection.numBox}
+        <div className="step-container">
+        <AnimatedButton style={{
+              fontSize: '2.5rem',
+              padding: '2rem 1rem',
+              width: '100%',
+              borderRadius: '16px',
+              maxWidth: 'none',
+              margin: 0,
+            }} onClick={openBox} disabled={loading}>
+          {t('openBox')} #{selection.numBox}
         </AnimatedButton>
+        <BackButton label={`${t('back')}`} />
+        </div>
       )}
 
       {step === 'completed' && operazioneAggiornata && (
-        <>
-          <FeedBackMessage text={`Ritiro completato nel Box #${selection.numBox}!`} />
-          <AnimatedButton onClick={startRitiro} disabled={loading}>
-            Nuovo Ritiro
-          </AnimatedButton>
-        </>
-      )}
+        <div className="step-container">
+    <FeedBackMessage text={t('withdrawCompletedBox', { numBox: selection.numBox })} />
+    <AnimatedButton style={{
+              fontSize: '2.5rem',
+              padding: '2rem 1rem',
+              width: '100%',
+              borderRadius: '16px',
+              maxWidth: 'none',
+              margin: 0,
+            }} onClick={startRitiro}>{t('newWithdraw')}</AnimatedButton>
+    <BackToHomeButton />
+        </div>
+)}
+
 
       {message && <FeedBackMessage text={message} />}
     </FadeUpContainer>

@@ -1,10 +1,7 @@
-import { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function LanguageSwitcher() {
-  const [lang, setLang] = useState('it'); 
-  const toggleLang = () => {
-    setLang(prevLang => (prevLang === 'it' ? 'en' : 'it'));
-  };
+  const { lang, toggleLang } = useLanguage();
 
   return (
     <button onClick={toggleLang}>

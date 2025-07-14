@@ -43,7 +43,7 @@ body {
 }
 
 /* Bottoni generici */
-button {
+button:not(.box-button) {
   font-size: 1.2rem;
   padding: 1rem 2rem;
   margin: 1rem;
@@ -51,7 +51,7 @@ button {
   border-radius: 8px;
   cursor: pointer;
   background-color: #0d7aad;
-  color: rgb(255, 255, 255);
+  color: white;
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
@@ -121,3 +121,80 @@ button:disabled {
   color: green;
   margin-top: 0.5rem;
 }
+
+
+.box-grid {
+  margin-top: 2rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+  justify-items: center;
+}
+
+.box-button {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* quadrato */
+  font-size: 1.3rem;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  background-color: #f0f0f0;
+  color: #333;
+  transition: transform 0.2s, box-shadow 0.2s;
+  padding: 1rem;
+}
+
+.box-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.box-button.selected {
+  background-color: #180dad;
+  color: white;
+  font-weight: bold;
+}
+
+.box-button.free {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.box-button.occupied {
+  background-color: #e67e22;
+  color: white;
+}
+
+.box-button.reserved {
+  background-color: #f1c40f;
+  color: #333;
+}
+
+.box-button.unknown {
+  background-color: #bdc3c7;
+  color: #555;
+}
+
+.button-centered {
+  width: 100%;        /* Occupa tutta la larghezza disponibile */
+  max-width: 300px;   /* Ma non più larga di 300px */
+  margin: 0 auto;     /* Centra il blocco orizzontalmente */
+  display: block;
+  text-align: center;
+  font-size: 1.6rem;
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+}
+
+.step-container {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  align-items: stretch;
+  text-align: center;
+}
+

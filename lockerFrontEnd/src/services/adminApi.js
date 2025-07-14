@@ -9,6 +9,8 @@ adminApi.interceptors.request.use(config => {
   const token = localStorage.getItem('adminToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    delete config.headers.Authorization; 
   }
   return config;
 });
