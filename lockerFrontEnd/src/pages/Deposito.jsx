@@ -7,8 +7,7 @@ import FeedBackMessage from '../components/FeedBackMessage';
 import BoxGrid from '../components/BoxGrid';
 import BackToHomeButton from '../components/BackToHomeButton';
 import BackButton from '../components/BackButton';
-import { useLanguage } from '../context/LanguageContext';
-import translations from '../translations';
+import { useTranslation } from 'react-i18next';
 
 export default function Deposit() {
   const [operazioneId, setOperazioneId] = useState(null);
@@ -18,8 +17,14 @@ export default function Deposit() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedBoxId, setSelectedBoxId] = useState(null);
   const [selectedNumBox, setSelectedNumBox] = useState(null);
-  const { lang } = useLanguage();
-  const t = translations[lang];
+
+  function renderMessage(message, t) {
+  if (!message) return '';
+  return typeof message === 'string' ? message : t(message.key, message.options);
+}
+
+
+  const { t } = useTranslation();
 
   const startDeposito = async () => {
     setMessage('');
@@ -30,7 +35,7 @@ export default function Deposit() {
       setSelectedBoxId(null);
       setSelectedNumBox(null);
     } catch {
-      setMessage('Errore nel creare operazione deposito');
+      setMessage(t('startDepositError'));
     }
   };
 
@@ -41,10 +46,10 @@ export default function Deposit() {
       const res = await api.post(`/deposit/${operazioneId}/select-box`, { boxId });
       const { numBox: nb } = res.data;
       setSelectedNumBox(nb);
-      setMessage(`Box #${nb} ${t.selectedAndReserved}`);
+      setMessage({ key: 'boxReserved', options: { numBox: nb } });
       setStep('setPin');
     } catch (err) {
-      setMessage(err.response?.data?.message || t.selectBoxError);
+      setMessage(err.response?.data?.message || t('selectBoxError'));
       setSelectedBoxId(null);
     }
   };
@@ -62,20 +67,20 @@ export default function Deposit() {
         aperturaSuccesso: true
       });
       if (res.data.success) {
-        setMessage(`${t.CompletedDeposit} #${selectedNumBox}!`);
+        setMessage({ key: 'depositCompleted', options: { numBox: selectedNumBox } }); 
         setStep('completed');
         setRefreshKey(prev => prev + 1);
       } else {
-        setMessage(res.data.message || t.openBoxError);
+        setMessage (t('openBoxError'));
       }
     } catch {
-      setMessage(t.openBoxError);
+      setMessage (t('openBoxError'));
     }
   };
 
   return (
     <FadeUpContainer>
-      <h1>{t.deposit}</h1>
+      <h1>{t('deposit')}</h1>
 
       {step === 'start' && (
       <div className="step-container">
@@ -86,7 +91,7 @@ export default function Deposit() {
               borderRadius: '16px',
               maxWidth: 'none',
               margin: 0,
-            }} onClick={startDeposito}>{t.startDeposit}</AnimatedButton>
+            }} onClick={startDeposito}>{t('startDeposit')}</AnimatedButton>
       </div>
       )}
 
@@ -99,14 +104,14 @@ export default function Deposit() {
           selectedBoxId={selectedBoxId}
           mode="deposit"
          />
-        <BackButton label={`${t.back}`} />
+        <BackButton label={t('back')} />
                 </div>
       )}
 
       {step === 'setPin' && (
       <div className="step-container">
         <PinForm operazioneId={operazioneId} onPinSuccess={onPinSuccess} />
-      <BackButton label={`${t.back}`}/>
+      <BackButton label={t('back')}/>
               </div>
       )}
 
@@ -119,14 +124,14 @@ export default function Deposit() {
               borderRadius: '16px',
               maxWidth: 'none',
               margin: 0,
-            }} onClick={openBox}>{`${t.openBox} #${selectedNumBox}`}</AnimatedButton>
-      <BackButton label={`${t.back}`}/>
+            }} onClick={openBox}>{t('openBox', { numBox: selectedNumBox })}</AnimatedButton>
+      <BackButton label={t('back')}/>
               </div>
       )}
 
       {step === 'completed' && (
   <div className="step-container">
-    <FeedBackMessage text={message} />
+    <FeedBackMessage text={renderMessage(message, t)} />
     <AnimatedButton style={{
               fontSize: '2.5rem',
               padding: '2rem 1rem',
@@ -134,14 +139,14 @@ export default function Deposit() {
               borderRadius: '16px',
               maxWidth: 'none',
               margin: 0,
-            }} onClick={startDeposito}>{t.newDeposit}</AnimatedButton>
-    <BackToHomeButton label={t.backToHome}/>
+            }} onClick={startDeposito}>{t('newDeposit')}</AnimatedButton>
+    <BackToHomeButton label={`${t('backToHome')}`}/>
   </div>
 )}
 
 
       {message && step !== 'completed' &&
-        <FeedBackMessage text={message} />
+        <FeedBackMessage text={renderMessage(message, t)} />
       }
     </FadeUpContainer>
   );

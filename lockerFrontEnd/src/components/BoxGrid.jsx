@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export default function BoxGrid({ onBoxSelected, refreshKey, selectedBoxId, mode = 'deposit' }) {
   const [boxes, setBoxes] = useState([]);
   const [error, setError] = useState('');
+  const { t } = useTranslation();
 
   const endpoint = mode === 'withdrawal' ? '/boxes/occupied' : '/boxes/available';
   const isClickableStatus = mode === 'withdrawal' ? 'OCCUPIED' : 'FREE';
@@ -23,7 +25,7 @@ export default function BoxGrid({ onBoxSelected, refreshKey, selectedBoxId, mode
 
   return (
     <div className="box-grid">
-      <h3>{mode === 'withdrawal' ? 'Box Occupati' : 'Box Disponibili'}</h3>
+      <h3>{mode === 'withdrawal' ? t('boxOccupied') : t('boxAvailable')}</h3>
       <div className="grid">
         {boxes.map(box => (
           <motion.button

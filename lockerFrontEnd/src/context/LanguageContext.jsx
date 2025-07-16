@@ -1,24 +1,29 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import i18n from '../i18n';
 
-// 1. Crea il contesto
+// Crea il contesto
 const LanguageContext = createContext();
 
-// 2. Crea il provider
+// Provider
 export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState('it'); // 'it' di default
+  const [lang, setLang] = useState('it');
 
-  const toggleLang = () => {
-    setLang(prev => (prev === 'it' ? 'en' : 'it'));
+  useEffect(() => {
+    i18n.changeLanguage(lang);
+  }, [lang]);
+
+  const changeLanguage = (newLang) => {
+    setLang(newLang);
   };
 
   return (
-    <LanguageContext.Provider value={{ lang, toggleLang }}>
+    <LanguageContext.Provider value={{ lang, changeLanguage }}>
       {children}
     </LanguageContext.Provider>
   );
 }
 
-// 3. Hook per usare il contesto nei componenti
+// 👉 QUESTA PARTE SERVE!
 export function useLanguage() {
   return useContext(LanguageContext);
 }

@@ -2,17 +2,19 @@ import { useState } from 'react';
 import api from '../services/api';
 import PinPad from './PinPad';
 import FadeUpContainer from './FadeUpContainer';
+import { useTranslation } from 'react-i18next';
 
 export default function PinForm({ operazioneId, onPinSuccess }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const { t } = useTranslation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (pin.length < 6) {
-      setError('Il PIN deve essere almeno di 6 cifre');
+      setError(t('pinMinLengthError'));
       return;
     }
 
@@ -20,11 +22,11 @@ export default function PinForm({ operazioneId, onPinSuccess }) {
       const response = await api.post(`/deposit/${operazioneId}/set-pin`, { pin });
       
       if (response.data.success) {
-        setSuccess('Box aperto con successo!');
+        setSuccess(t('boxOpenedSuccess'));
         setError('');
         onPinSuccess(pin);  // <-- qui chiami onPinSuccess passando il pin inserito
       } else {
-        setError(response.data.message || "Errore nel salvataggio pin");
+        setError(response.data.message || t('pinSaveError'));
         setSuccess('');
       }
     } catch (err) {
@@ -53,7 +55,7 @@ export default function PinForm({ operazioneId, onPinSuccess }) {
           type="password"
           readOnly
           value={pin}
-          aria-label="PIN inserito"
+          aria-label={t('pinEntered')}
           className="pin-input"
         />
         <PinPad pin={pin} onChange={handlePinChange} onBackspace={handleBackspace} />
@@ -62,7 +64,7 @@ export default function PinForm({ operazioneId, onPinSuccess }) {
           disabled={pin.length < 6}
           className="submit-btn"
         >
-          Imposta PIN
+          {t('setPin')}
         </button>
       </form>
       {error && <p className="error-msg">{error}</p>}

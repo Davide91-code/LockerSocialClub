@@ -17,6 +17,12 @@ export default function Ritiro() {
   const [operazioneAggiornata, setOperazioneAggiornata] = useState(null);
   const { t } = useTranslation();
 
+
+  function renderMessage(message, t) {
+  if (!message) return '';
+  return typeof message === 'string' ? message : t(message.key, message.options);
+}
+
   const startRitiro = async () => {
     setMessage('');
     setLoading(true);
@@ -34,13 +40,13 @@ export default function Ritiro() {
   const selectBox = (boxId, numBox) => {
     setSelection(sel => ({ ...sel, boxId, numBox }));
     setStep('verify');
-    setMessage(t('boxSelectedInsertPin', { numBox }));
+    setMessage({ key: 'boxSelectedInsertPin', options: { numBox } }); 
   };
 
   const verifyPinAndBox = async () => {
     const { boxId, pin } = selection;
     if (!boxId || !/^\d{6}$/.test(pin)) {
-      setMessage(t('insertValidBoxPin'));
+      setMessage(t('insertValidBoxPin')); 
       return;
     }
     setLoading(true);
@@ -50,7 +56,7 @@ export default function Ritiro() {
         boxId
       });
       setStep('openBox');
-      setMessage(t('verificationSuccessOpenBox'));
+      setMessage({ key: 'verificationSuccessOpenBox'}); // ({ key: 'verificationSuccessOpenBox'});
     } catch (e) {
       setMessage(e.response?.data?.message || t('errorVerification'));
       setStep('verify');
@@ -67,7 +73,7 @@ export default function Ritiro() {
         aperturaSuccesso: true
       });
       setOperazioneAggiornata(res.data.data);
-      setMessage(res.data.message || 'Ritiro completato'); //tornare
+      setMessage ({ key: 'postWithdraw', options: { numBox: selection.numBox } }); //tornare ({ key: 'postWithdraw', options: { numBox: selection.numBox } }); 
       setStep('completed');
     } catch (e) {
       setMessage(e.response?.data?.message || t('errorOpenBox'));
@@ -90,7 +96,7 @@ export default function Ritiro() {
               maxWidth: 'none',
               margin: 0,
             }} onClick={startRitiro} disabled={loading}>
-          {loading ? '...' : 'Inizia Ritiro'}
+          {loading ? '...' : t('startWithdraw')}
         </AnimatedButton>
         </div>
       )}
@@ -143,7 +149,7 @@ export default function Ritiro() {
 
       {step === 'completed' && operazioneAggiornata && (
         <div className="step-container">
-    <FeedBackMessage text={t('withdrawCompletedBox', { numBox: selection.numBox })} />
+    <FeedBackMessage text={renderMessage(message, t)} />
     <AnimatedButton style={{
               fontSize: '2.5rem',
               padding: '2rem 1rem',
@@ -152,12 +158,14 @@ export default function Ritiro() {
               maxWidth: 'none',
               margin: 0,
             }} onClick={startRitiro}>{t('newWithdraw')}</AnimatedButton>
-    <BackToHomeButton />
+    <BackToHomeButton label={`${t('backToHome')}`} />
         </div>
 )}
 
 
-      {message && <FeedBackMessage text={message} />}
+      {message && step !== 'completed' &&
+              <FeedBackMessage text={renderMessage(message, t)} />
+            }
     </FadeUpContainer>
   );
 }

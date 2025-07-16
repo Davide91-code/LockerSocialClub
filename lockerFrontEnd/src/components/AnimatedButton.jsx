@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
-import { useLanguage } from '../context/LanguageContext';
-import translations from '../translations';
+import { useTranslation } from 'react-i18next';
 
 export default function AnimatedButton({
   labelKey,
@@ -10,8 +9,7 @@ export default function AnimatedButton({
   className = '',
   style = {},
 }) {
-  const { lang } = useLanguage();
-  const t = translations[lang];
+  const { t } = useTranslation();
 
   return (
     <motion.button
@@ -31,7 +29,7 @@ export default function AnimatedButton({
       }}
     >
       {/* Se c'è una labelKey usala, altrimenti mostra children */}
-      {labelKey ? (t[labelKey] || labelKey) : children}
+      {labelKey ? t(labelKey) : children}
     </motion.button>
   );
 }

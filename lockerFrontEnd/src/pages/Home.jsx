@@ -1,16 +1,14 @@
 import { Link } from 'react-router-dom';
 import FadeUpContainer from '../components/FadeUpContainer';
 import AnimatedButton from '../components/AnimatedButton';
-import { useLanguage } from '../context/LanguageContext';
-import translations from '../translations';
+import { useTranslation } from 'react-i18next';
 
 export default function Home() {
-  const { lang } = useLanguage();
-  const t = translations[lang];
+  const { t } = useTranslation();
 
   return (
     <FadeUpContainer>
-      <h1>{t.welcome}</h1>
+      <h1>{t('welcome')}</h1>
       <nav
         style={{
           display: 'flex',
