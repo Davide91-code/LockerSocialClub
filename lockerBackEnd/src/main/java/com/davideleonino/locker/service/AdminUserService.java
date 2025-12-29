@@ -28,6 +28,10 @@ public class AdminUserService {
         return adminUserRepository.findByUsername(username);
     }
 
+    public AdminUser save(AdminUser admin) {
+        return adminUserRepository.save(admin);
+    }
+
 }
 
 

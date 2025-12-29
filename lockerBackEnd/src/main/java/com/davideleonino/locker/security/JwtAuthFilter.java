@@ -61,7 +61,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         } else {
             // 2. Nessun token -> blocca se richieste verso endpoint admin tranne login
             String path = request.getRequestURI();
-            if (path.startsWith("/admin") && !path.equals("/admin/login")) {
+            if (path.startsWith("/api/admin") && !path.equals("/api/admin/login") && !path.equals("/api/admin/create")) {
                 response.setContentType("application/json");
                 response.getWriter().write("{\"success\":false,\"message\":\"Token non valido o assente\"}");
                 return;

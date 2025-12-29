@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/api/admin")
 public class AdminUserController {
 
     @Autowired
@@ -62,6 +62,22 @@ public class AdminUserController {
     ) {
         List<Operazione> ops = operazioneService.search(status, fromDate, toDate);
         return ResponseEntity.ok(new ApiResponseDto(true, "Registro operazioni", ops));
+    }
+
+
+    @PostMapping("/create") //Temporaneo per Demo creazione
+    public ResponseEntity<ApiResponseDto> createAdmin(@RequestBody AdminUser admin) {
+
+        if (adminUserService.trovaPerUsername(admin.getUsername()).isPresent()) {
+            return ResponseEntity.badRequest().body(
+                    new ApiResponseDto(false, "Username già esistente", null)
+            );
+        }
+
+        AdminUser savedAdmin = adminUserService.save(admin);
+        return ResponseEntity.ok(
+                new ApiResponseDto(true, "Admin creato con successo", savedAdmin)
+        );
     }
 
 
