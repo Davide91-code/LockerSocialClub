@@ -1,0 +1,13 @@
+# Configurazioni locali (non pubblicare su GitHub)
+application.properties
+.env
+
+# Build
+target/
+
+# IDE
+.idea/
+*.iml
+
+# Log
+*.log
