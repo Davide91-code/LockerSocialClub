@@ -1,6 +1,6 @@
 import DateTimeDisplay from './DateTimeDisplay';
 import LanguageSwitcher from './LanguageSwitcher';
-import logo from '../assets/Logo.jpg';
+import logo from '../assets/LogoLocker.svg';
 
 export default function Layout({ children }) {
   return (
