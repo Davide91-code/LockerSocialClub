@@ -66,10 +66,17 @@ Il sistema consente di depositare e ritirare oggetti in modo sicuro tramite PIN,
 
 ### Back-end
 
-1. Clonare il repository
+1. Clonare il repository: git clone https://github.com/Davide91-code/LockerSocialClub.git
 2. Configurare il database MySQL
 3. Creare il file `application.properties` usando come riferimento `application.properties.example`
-4. Avviare il progetto con:
+4. Avviare il progetto con: `mvn spring-boot:run`
 
-```bash
-mvn spring-boot:run
+### Front-end
+
+1. Entrare nella cartella frontend
+
+2. Installare le dipendenze: `npm install`
+
+3. Avviare il progetto: `npm start`
+
+4. Accedere al portale tramite browser
