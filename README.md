@@ -44,19 +44,19 @@ Il sistema consente di depositare e ritirare oggetti in modo sicuro tramite PIN,
 ---
 
 ### Home page – deposito e ritiro
-![Home page](screenshots/01-home.png)
+![Home page](./screenshots/01_home.png)
 
 ### Selezione box disponibili
-![Box disponibili](screenshots/02-select-box.png)
+![Box disponibili](./screenshots/02_select_box.png)
 
 ### Inserimento PIN
-![Inserimento PIN](screenshots/03-pin-retrieval.png)
+![Inserimento PIN](./screenshots/03_pin_retrieval.png)
 
 ### Conferma deposito
-![Conferma deposito](screenshots/04-open-box.png)
+![Conferma deposito](./screenshots/04_open_box.png)
 
 ### Pannello admin
-![Admin panel](screenshots/05-admin-status.png)
+![Admin panel](./screenshots/05_admin_status.png)
 
 
 ---
